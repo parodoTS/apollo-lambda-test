@@ -1,0 +1,155 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: The AWS CloudFormation template for this Serverless application
+Resources:
+  ServerlessDeploymentBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+  ServerlessDeploymentBucketPolicy:
+    Type: 'AWS::S3::BucketPolicy'
+    Properties:
+      Bucket: !Ref ServerlessDeploymentBucket
+      PolicyDocument:
+        Statement:
+          - Action: 's3:*'
+            Effect: Deny
+            Principal: '*'
+            Resource:
+              - !Join 
+                - ''
+                - - 'arn:'
+                  - !Ref 'AWS::Partition'
+                  - ':s3:::'
+                  - !Ref ServerlessDeploymentBucket
+                  - /*
+              - !Join 
+                - ''
+                - - 'arn:'
+                  - !Ref 'AWS::Partition'
+                  - ':s3:::'
+                  - !Ref ServerlessDeploymentBucket
+            Condition:
+              Bool:
+                'aws:SecureTransport': false
+  ApolloDashserverDashfunctionLogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: /aws/lambda/apollolambdatest-dev-apollo-server-function
+  ApolloDashserverDashfunctionLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Ref ServerlessDeploymentBucket
+        S3Key: >-
+          serverless/apollolambdatest/dev/1653043884708-2022-05-20T10:51:24.708Z/apollolambdatest.zip
+      Handler: index.graphqlHandler
+      Runtime: nodejs14.x
+      FunctionName: apollolambdatest-dev-apollo-server-function
+      MemorySize: 1024
+      Timeout: 6
+      Role: !GetAtt 
+        - apollomyCustRole0
+        - Arn
+    DependsOn:
+      - ApolloDashserverDashfunctionLogGroup
+      - apollomyCustRole0
+  ApolloDashserverDashfunctionLambdaVersionskGdrZv0Jmr9V0H52IfBe6A9aLaqyNXljb3Ik69iiw8:
+    Type: 'AWS::Lambda::Version'
+    DeletionPolicy: Retain
+    Properties:
+      FunctionName: !Ref ApolloDashserverDashfunctionLambdaFunction
+      CodeSha256: SNHdtcm+tweXVjbxx1es3ajUnWsGjy9LVziX7aKEHds=
+  ApolloDashserverDashfunctionLambdaFunctionUrl:
+    Type: 'AWS::Lambda::Url'
+    Properties:
+      AuthType: NONE
+      TargetFunctionArn: !GetAtt 
+        - ApolloDashserverDashfunctionLambdaFunction
+        - Arn
+      Cors:
+        AllowHeaders:
+          - Content-Type
+          - X-Amz-Date
+          - Authorization
+          - X-Api-Key
+          - X-Amz-Security-Token
+        AllowMethods:
+          - '*'
+        AllowOrigins:
+          - '*'
+  ApolloDashserverDashfunctionLambdaPermissionFnUrl:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt 
+        - ApolloDashserverDashfunctionLambdaFunction
+        - Arn
+      Action: 'lambda:InvokeFunctionUrl'
+      Principal: '*'
+      FunctionUrlAuthType: NONE
+  apollomyCustRole0:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      Path: /my/cust/path/
+      RoleName: apollo-MyCustRole0
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: apollo-myPolicyName
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'logs:CreateLogStream'
+                  - 'rds-data:ExecuteStatement'
+                  - 'secretsmanager:*'
+                  - 'lambda:InvokeFunction'
+                  - 'lambda:InvokeAsync'
+                  - 'logs:CreateLogGroup'
+                Resource:
+                  - 'arn:aws:lambda:us-west-2:YOUR_ACCOUNT:function:API_list'
+                  - >-
+                    arn:aws:logs:us-west-2:YOUR_ACCOUNT:log-group:/aws/lambda/apollolambdatest-dev*:*
+                  - >-
+                    arn:aws:rds:us-west-2:YOUR_ACCOUNT:cluster:pcmt-25-serverless
+                  - >-
+                    arn:aws:secretsmanager:us-west-2:YOUR_ACCOUNT:secret:rds-db-credentials/cluster-RV3Y7OJVZRC5XYJBOYI2CY7CJ4/admin2-MQASTx
+              - Effect: Allow
+                Action:
+                  - 'logs:PutLogEvents'
+                Resource:
+                  - >-
+                    arn:aws:logs:us-west-2:YOUR_ACCOUNT:log-group:/aws/lambda/apollolambdatest-dev*:*:*
+              - Effect: Allow
+                Action:
+                  - 'secretsmanager:GetRandomPassword'
+                  - 'secretsmanager:ListSecrets'
+                Resource: '*'
+Outputs:
+  ServerlessDeploymentBucketName:
+    Value: !Ref ServerlessDeploymentBucket
+    Export:
+      Name: sls-apollolambdatest-dev-ServerlessDeploymentBucketName
+  ApolloDashserverDashfunctionLambdaFunctionQualifiedArn:
+    Description: Current Lambda function version
+    Value: !Ref >-
+      ApolloDashserverDashfunctionLambdaVersionskGdrZv0Jmr9V0H52IfBe6A9aLaqyNXljb3Ik69iiw8
+    Export:
+      Name: >-
+        sls-apollolambdatest-dev-ApolloDashserverDashfunctionLambdaFunctionQualifiedArn
+  ApolloDashserverDashfunctionLambdaFunctionUrl:
+    Description: Lambda Function URL
+    Value: !GetAtt 
+      - ApolloDashserverDashfunctionLambdaFunctionUrl
+      - FunctionUrl
+    Export:
+      Name: sls-apollolambdatest-dev-ApolloDashserverDashfunctionLambdaFunctionUrl

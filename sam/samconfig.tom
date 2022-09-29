@@ -1,0 +1,11 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "apollo-sam-stack"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1mlvnxhk83k8s"
+s3_prefix = "apollo-sam-stack"
+region = "us-west-2"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+image_repositories = []

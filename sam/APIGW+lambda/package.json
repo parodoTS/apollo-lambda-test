@@ -1,0 +1,14 @@
+{
+  "name": "apollolambdatest",
+  "version": "1.0.0",
+  "description": "hello world sample for NodeJS",
+  "main": "index.js",
+  "dependencies": {
+    "apollo-server-lambda": "^3.7.0",
+    "graphql": "^16.4.0",
+    "@aws-sdk/client-lambda": "^3.87.0",
+    "@aws-sdk/client-rds-data": "^3.85.0",
+    "apollo-datasource-rest": "^3.5.3",
+    "pg": "^8.7.3"
+  }
+}

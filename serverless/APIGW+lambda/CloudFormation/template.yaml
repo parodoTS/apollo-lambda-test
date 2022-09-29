@@ -1,0 +1,232 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: The AWS CloudFormation template for this Serverless application
+Resources:
+  ServerlessDeploymentBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+  ServerlessDeploymentBucketPolicy:
+    Type: 'AWS::S3::BucketPolicy'
+    Properties:
+      Bucket: !Ref ServerlessDeploymentBucket
+      PolicyDocument:
+        Statement:
+          - Action: 's3:*'
+            Effect: Deny
+            Principal: '*'
+            Resource:
+              - !Join 
+                - ''
+                - - 'arn:'
+                  - !Ref 'AWS::Partition'
+                  - ':s3:::'
+                  - !Ref ServerlessDeploymentBucket
+                  - /*
+              - !Join 
+                - ''
+                - - 'arn:'
+                  - !Ref 'AWS::Partition'
+                  - ':s3:::'
+                  - !Ref ServerlessDeploymentBucket
+            Condition:
+              Bool:
+                'aws:SecureTransport': false
+  ApolloDashserverDashfunctionLogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: /aws/lambda/apollolambdatest-dev-apollo-server-function
+  ApolloDashserverDashfunctionLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Ref ServerlessDeploymentBucket
+        S3Key: >-
+          serverless/apollolambdatest/dev/1652285137208-2022-05-11T16:05:37.208Z/apollolambdatest.zip
+      Handler: index.graphqlHandler
+      Runtime: nodejs14.x
+      FunctionName: apollolambdatest-dev-apollo-server-function
+      MemorySize: 1024
+      Timeout: 6
+      Role: !GetAtt 
+        - apollomyCustRole0
+        - Arn
+    DependsOn:
+      - ApolloDashserverDashfunctionLogGroup
+      - apollomyCustRole0
+  ApolloDashserverDashfunctionLambdaVersionnKigabpnemNADMgjdBaLUxgNbaKqbGQQ5GKWlPhfkYI:
+    Type: 'AWS::Lambda::Version'
+    DeletionPolicy: Retain
+    Properties:
+      FunctionName: !Ref ApolloDashserverDashfunctionLambdaFunction
+      CodeSha256: iXU+Eou8yAJXJCKWVuDUKDI55ccIUcHh/g2mZqzqGJY=
+  ApiGatewayRestApi:
+    Type: 'AWS::ApiGateway::RestApi'
+    Properties:
+      Name: dev-apollolambdatest
+      EndpointConfiguration:
+        Types:
+          - EDGE
+      Policy: ''
+  ApiGatewayResourceProxyVar:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !GetAtt 
+        - ApiGatewayRestApi
+        - RootResourceId
+      PathPart: '{proxy+}'
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodProxyVarOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+          ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{statusCode:200}'
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+              method.response.header.Access-Control-Allow-Headers: >-
+                'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'
+              method.response.header.Access-Control-Allow-Methods: '''OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'''
+            ResponseTemplates:
+              application/json: ''
+      ResourceId: !Ref ApiGatewayResourceProxyVar
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodProxyVarAny:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: ANY
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourceProxyVar
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Join 
+          - ''
+          - - 'arn:'
+            - !Ref 'AWS::Partition'
+            - ':apigateway:'
+            - !Ref 'AWS::Region'
+            - ':lambda:path/2015-03-31/functions/'
+            - !GetAtt 
+              - ApolloDashserverDashfunctionLambdaFunction
+              - Arn
+            - /invocations
+      MethodResponses: []
+    DependsOn:
+      - ApolloDashserverDashfunctionLambdaPermissionApiGateway
+  ApiGatewayDeployment1652285021580:
+    Type: 'AWS::ApiGateway::Deployment'
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      StageName: dev
+    DependsOn:
+      - ApiGatewayMethodProxyVarOptions
+      - ApiGatewayMethodProxyVarAny
+  ApolloDashserverDashfunctionLambdaPermissionApiGateway:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt 
+        - ApolloDashserverDashfunctionLambdaFunction
+        - Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join 
+        - ''
+        - - 'arn:'
+          - !Ref 'AWS::Partition'
+          - ':execute-api:'
+          - !Ref 'AWS::Region'
+          - ':'
+          - !Ref 'AWS::AccountId'
+          - ':'
+          - !Ref ApiGatewayRestApi
+          - /*/*
+  apollomyCustRole0:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      Path: /my/cust/path/
+      RoleName: apollo-MyCustRole0
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: apollo-myPolicyName
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'logs:CreateLogStream'
+                  - 'rds-data:ExecuteStatement'
+                  - 'secretsmanager:*'
+                  - 'lambda:InvokeFunction'
+                  - 'lambda:InvokeAsync'
+                  - 'logs:CreateLogGroup'
+                Resource:
+                  - 'arn:aws:lambda:us-west-2:YOUR_ACCOUNT:function:API_list'
+                  - >-
+                    arn:aws:logs:us-west-2:YOUR_ACCOUNT:log-group:/aws/lambda/apollolambdatest-dev*:*
+                  - >-
+                    arn:aws:rds:us-west-2:YOUR_ACCOUNT:cluster:pcmt-25-serverless
+                  - >-
+                    arn:aws:secretsmanager:us-west-2:YOUR_ACCOUNT:secret:rds-db-credentials/cluster-RV3Y7OJVZRC5XYJBOYI2CY7CJ4/admin2-MQASTx
+              - Effect: Allow
+                Action:
+                  - 'logs:PutLogEvents'
+                Resource:
+                  - >-
+                    arn:aws:logs:us-west-2:YOUR_ACCOUNT:log-group:/aws/lambda/apollolambdatest-dev*:*:*
+              - Effect: Allow
+                Action:
+                  - 'secretsmanager:GetRandomPassword'
+                  - 'secretsmanager:ListSecrets'
+                Resource: '*'
+Outputs:
+  ServerlessDeploymentBucketName:
+    Value: !Ref ServerlessDeploymentBucket
+    Export:
+      Name: sls-apollolambdatest-dev-ServerlessDeploymentBucketName
+  ApolloDashserverDashfunctionLambdaFunctionQualifiedArn:
+    Description: Current Lambda function version
+    Value: !Ref >-
+      ApolloDashserverDashfunctionLambdaVersionnKigabpnemNADMgjdBaLUxgNbaKqbGQQ5GKWlPhfkYI
+    Export:
+      Name: >-
+        sls-apollolambdatest-dev-ApolloDashserverDashfunctionLambdaFunctionQualifiedArn
+  ServiceEndpoint:
+    Description: URL of the service endpoint
+    Value: !Join 
+      - ''
+      - - 'https://'
+        - !Ref ApiGatewayRestApi
+        - .execute-api.
+        - !Ref 'AWS::Region'
+        - .
+        - !Ref 'AWS::URLSuffix'
+        - /dev
+    Export:
+      Name: sls-apollolambdatest-dev-ServiceEndpoint

@@ -1,0 +1,131 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: |
+  apollo-lambda-sam
+  Sample SAM Template for apollo-lambda-sam
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway endpoint URL for Prod stage for Apollo Server function
+    Value: !Sub >-
+      https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/{proxy+}
+  ApolloServerFunction:
+    Description: Apollo Server Lambda Function ARN
+    Value: !GetAtt 
+      - ApolloServerFunction
+      - Arn
+  ApolloServerFunctionIamRole:
+    Description: IAM Role created for Apollo Server function
+    Value: !GetAtt 
+      - ApolloServerFunctionRole
+      - Arn
+Resources:
+  ApolloServerFunctionApiEventSourcePermissionProd:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref ApolloServerFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 
+        - >-
+          arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${__ApiId__}/${__Stage__}/*/*
+        - __ApiId__: !Ref ServerlessRestApi
+          __Stage__: '*'
+  ApolloServerFunction:
+    Type: 'AWS::Lambda::Function'
+    Metadata:
+      SamResourceId: ApolloServerFunction
+    Properties:
+      Code:
+        S3Bucket: aws-sam-cli-managed-default-samclisourcebucket-1mlvnxhk83k8s
+        S3Key: apollo-sam-stack/f771bdd8e355962f5888d4a530698068
+      Handler: index.graphqlHandler
+      Role: !GetAtt 
+        - ApolloServerFunctionRole
+        - Arn
+      Runtime: nodejs14.x
+      Timeout: 6
+      Tags:
+        - Key: 'lambda:createdBy'
+          Value: SAM
+      TracingConfig:
+        Mode: Active
+      Architectures:
+        - x86_64
+  ServerlessRestApiProdStage:
+    Type: 'AWS::ApiGateway::Stage'
+    Properties:
+      DeploymentId: !Ref ServerlessRestApiDeploymentc870a5c4b6
+      RestApiId: !Ref ServerlessRestApi
+      StageName: Prod
+  ServerlessRestApiDeploymentc870a5c4b6:
+    Type: 'AWS::ApiGateway::Deployment'
+    Properties:
+      Description: 'RestApi deployment id: c870a5c4b6d652e56fe4704f8693e31f08c65fbf'
+      RestApiId: !Ref ServerlessRestApi
+      StageName: Stage
+  ApolloServerFunctionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+        - 'arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess'
+      Policies:
+        - PolicyName: ApolloServerFunctionRolePolicy0
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'logs:CreateLogStream'
+                  - 'rds-data:ExecuteStatement'
+                  - 'secretsmanager:*'
+                  - 'lambda:InvokeFunction'
+                  - 'lambda:InvokeAsync'
+                  - 'logs:CreateLogGroup'
+                Resource:
+                  - 'arn:aws:lambda:us-west-2:YOUR_ACCOUNT:function:API_list'
+                  - >-
+                    arn:aws:logs:us-west-2:YOUR_ACCOUNT:log-group:/aws/lambda/apollolambdatest-dev*:*
+                  - >-
+                    arn:aws:rds:us-west-2:YOUR_ACCOUNT:cluster:pcmt-25-serverless
+                  - >-
+                    arn:aws:secretsmanager:us-west-2:YOUR_ACCOUNT:secret:rds-db-credentials/cluster-RV3Y7OJVZRC5XYJBOYI2CY7CJ4/admin2-MQASTx
+              - Effect: Allow
+                Action:
+                  - 'logs:PutLogEvents'
+                Resource:
+                  - >-
+                    arn:aws:logs:us-west-2:YOUR_ACCOUNT:log-group:/aws/lambda/apollolambdatest-dev*:*:*
+              - Effect: Allow
+                Action:
+                  - 'secretsmanager:GetRandomPassword'
+                  - 'secretsmanager:ListSecrets'
+                Resource: '*'
+      Tags:
+        - Key: 'lambda:createdBy'
+          Value: SAM
+  ServerlessRestApi:
+    Type: 'AWS::ApiGateway::RestApi'
+    Properties:
+      Body:
+        info:
+          version: '1.0'
+          title: !Ref 'AWS::StackName'
+        paths:
+          '/{proxy+}':
+            x-amazon-apigateway-any-method:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri: !Sub >-
+                  arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ApolloServerFunction.Arn}/invocations
+              responses: {}
+        swagger: '2.0'
